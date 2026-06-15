@@ -11,20 +11,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<PlannerContext>(options =>
-{ 
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+// Register a DbContext factory so callers can create short-lived
+// PlannerContext instances (safe for background or parallel usage).
+builder.Services.AddDbContextFactory<PlannerContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DatabaseConnection")));
 
-    // Only enable when running in a local development environment
-    if (builder.Environment.IsDevelopment())
-    {
-        options.EnableSensitiveDataLogging();
-    }
-});
+builder.Services.AddControllers().AddJsonOptions(x =>
+   x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
 
-
-
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

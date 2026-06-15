@@ -4,54 +4,50 @@ using MealPlannerAPI.Models;
 
 [Route("api/[controller]")]
 [ApiController]
-public class RecipesController : ControllerBase
+public class InventoriesController : ControllerBase
 {
     private readonly IDbContextFactory<PlannerContext> _contextFactory;
 
-    public RecipesController(IDbContextFactory<PlannerContext> contextFactory)
+    public InventoriesController(IDbContextFactory<PlannerContext> contextFactory)
     {
         _contextFactory = contextFactory;
     }
 
-    // GET: api/Recipes
+    // GET: api/Inventory
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Recipe>>> GetRecipes()
+    public async Task<ActionResult<IEnumerable<Inventory>>> GetInventory()
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        var resultList = await context.Recipes
-            .Include(r => r.RecipeIngredients)
-            .ThenInclude(ri => ri.Ingredient)
-            .ToListAsync();
-        return resultList;
+        return await context.Inventory.ToListAsync();
     }
 
-    // GET: api/Recipe/5
+    // GET: api/Inventory/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<Recipe>> GetRecipe(int id)
+    public async Task<ActionResult<Inventory>> GetInventory(int id)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        var recipe = await context.Recipes.FindAsync(id);
+        var inventory = await context.Inventory.FindAsync(id);
 
-        if (recipe == null)
+        if (inventory == null)
         {
             return NotFound();
         }
 
-        return recipe;
+        return inventory;
     }
 
-    // PUT: api/Recipe/5
+    // PUT: api/Inventory/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutRecipe(int? id, Recipe recipe)
+    public async Task<IActionResult> PutInventory(int? id, Inventory inventory)
     {
-        if (id != recipe.Id)
+        if (id != inventory.Id)
         {
             return BadRequest();
         }
 
         using var context = await _contextFactory.CreateDbContextAsync();
-        context.Entry(recipe).State = EntityState.Modified;
+        context.Entry(inventory).State = EntityState.Modified;
 
         try
         {
@@ -59,7 +55,7 @@ public class RecipesController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!await RecipeExists(id))
+            if (!await InventoryExists(id))
             {
                 return NotFound();
             }
@@ -72,38 +68,38 @@ public class RecipesController : ControllerBase
         return NoContent();
     }
 
-    // POST: api/Recipe
+    // POST: api/Inventory
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Recipe>> PostRecipe(Recipe recipe)
+    public async Task<ActionResult<Inventory>> PostInventory(Inventory inventory)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        context.Recipes.Add(recipe);
+        context.Inventory.Add(inventory);
         await context.SaveChangesAsync();
 
-        return CreatedAtAction("GetRecipe", new { id = recipe.Id }, recipe);
+        return CreatedAtAction("GetInventory", new { id = inventory.Id }, inventory);
     }
 
-    // DELETE: api/Recipe/5
+    // DELETE: api/Inventory/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteRecipe(int? id)
+    public async Task<IActionResult> DeleteInventory(int? id)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        var recipe = await context.Recipes.FindAsync(id);
-        if (recipe == null)
+        var inventory = await context.Inventory.FindAsync(id);
+        if (inventory == null)
         {
             return NotFound();
         }
 
-        context.Recipes.Remove(recipe);
+        context.Inventory.Remove(inventory);
         await context.SaveChangesAsync();
 
         return NoContent();
     }
 
-    private async Task<bool> RecipeExists(int? id)
+    private async Task<bool> InventoryExists(int? id) 
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Recipes.AnyAsync(e => e.Id == id);
+        return await context.Inventory.AnyAsync(e => e.Id == id);
     }
 }

@@ -4,54 +4,52 @@ using MealPlannerAPI.Models;
 
 [Route("api/[controller]")]
 [ApiController]
-public class RecipesController : ControllerBase
+public class IngredientsController : ControllerBase
 {
     private readonly IDbContextFactory<PlannerContext> _contextFactory;
-
-    public RecipesController(IDbContextFactory<PlannerContext> contextFactory)
+    public IngredientsController(IDbContextFactory<PlannerContext> contextFactory)
     {
         _contextFactory = contextFactory;
     }
 
-    // GET: api/Recipes
+    // GET: api/Ingredient
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Recipe>>> GetRecipes()
+    public async Task<ActionResult<IEnumerable<Ingredient>>> GetIngredient()
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        var resultList = await context.Recipes
-            .Include(r => r.RecipeIngredients)
-            .ThenInclude(ri => ri.Ingredient)
+        return await context.Ingredients
+            .Include(i => i.RecipeIngredients)
+            .ThenInclude(ri => ri.Recipe)
             .ToListAsync();
-        return resultList;
     }
 
-    // GET: api/Recipe/5
+    // GET: api/Ingredient/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<Recipe>> GetRecipe(int id)
+    public async Task<ActionResult<Ingredient>> GetIngredient(int id)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        var recipe = await context.Recipes.FindAsync(id);
+        var ingredient = await context.Ingredients.FindAsync(id);
 
-        if (recipe == null)
+        if (ingredient == null)
         {
             return NotFound();
         }
 
-        return recipe;
+        return ingredient;
     }
 
-    // PUT: api/Recipe/5
+    // PUT: api/Ingredient/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutRecipe(int? id, Recipe recipe)
+    public async Task<IActionResult> PutIngredient(int? id, Ingredient ingredient)
     {
-        if (id != recipe.Id)
+        if (id != ingredient.Id)
         {
             return BadRequest();
         }
 
         using var context = await _contextFactory.CreateDbContextAsync();
-        context.Entry(recipe).State = EntityState.Modified;
+        context.Entry(ingredient).State = EntityState.Modified;
 
         try
         {
@@ -59,7 +57,7 @@ public class RecipesController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!await RecipeExists(id))
+            if (!await IngredientExists(id))
             {
                 return NotFound();
             }
@@ -72,38 +70,38 @@ public class RecipesController : ControllerBase
         return NoContent();
     }
 
-    // POST: api/Recipe
+    // POST: api/Ingredient
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Recipe>> PostRecipe(Recipe recipe)
+    public async Task<ActionResult<Ingredient>> PostIngredient(Ingredient ingredient)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        context.Recipes.Add(recipe);
+        context.Ingredients.Add(ingredient);
         await context.SaveChangesAsync();
 
-        return CreatedAtAction("GetRecipe", new { id = recipe.Id }, recipe);
+        return CreatedAtAction("GetIngredient", new { id = ingredient.Id }, ingredient);
     }
 
-    // DELETE: api/Recipe/5
+    // DELETE: api/Ingredient/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteRecipe(int? id)
+    public async Task<IActionResult> DeleteIngredient(int? id)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        var recipe = await context.Recipes.FindAsync(id);
-        if (recipe == null)
+        var ingredient = await context.Ingredients.FindAsync(id);
+        if (ingredient == null)
         {
             return NotFound();
         }
 
-        context.Recipes.Remove(recipe);
+        context.Ingredients.Remove(ingredient);
         await context.SaveChangesAsync();
 
         return NoContent();
     }
 
-    private async Task<bool> RecipeExists(int? id)
+    private async Task<bool> IngredientExists(int? id)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Recipes.AnyAsync(e => e.Id == id);
+        return await context.Ingredients.AnyAsync(e => e.Id == id);
     }
 }

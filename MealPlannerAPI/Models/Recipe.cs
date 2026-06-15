@@ -9,6 +9,6 @@ namespace MealPlannerAPI.Models
         public string Instructions { get; set; } = string.Empty;
         public string Unit { get; set; } = string.Empty;
 
-        public virtual List<RecipeIngredients>? RecipeIngredients { get; set; }
+        public List<RecipeIngredients> RecipeIngredients  { get; } = [];
     }
 }

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MealPlannerAPI.Migrations
 {
     [DbContext(typeof(PlannerContext))]
-    [Migration("20260610225129_InitialMigration")]
-    partial class InitialMigration
+    [Migration("20260613043756_QuantityAndUnitsToRecipeIngredients")]
+    partial class QuantityAndUnitsToRecipeIngredients
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
