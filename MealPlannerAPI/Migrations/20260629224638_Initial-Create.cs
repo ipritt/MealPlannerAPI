@@ -2,8 +2,6 @@
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-
 namespace MealPlannerAPI.Migrations
 {
     /// <inheritdoc />
@@ -17,9 +15,7 @@ namespace MealPlannerAPI.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Category = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1")
                 },
                 constraints: table =>
                 {
@@ -31,10 +27,7 @@ namespace MealPlannerAPI.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Instructions = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Unit = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1")
                 },
                 constraints: table =>
                 {
@@ -47,7 +40,7 @@ namespace MealPlannerAPI.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Quantity = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Quantity = table.Column<decimal>(type: "decimal(6,2)", precision: 6, scale: 2, nullable: false),
                     Unit = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IngredientId = table.Column<int>(type: "int", nullable: false)
                 },
@@ -63,39 +56,16 @@ namespace MealPlannerAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "IngredientRecipe",
-                columns: table => new
-                {
-                    IngredientsId = table.Column<int>(type: "int", nullable: false),
-                    RecipesId = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_IngredientRecipe", x => new { x.IngredientsId, x.RecipesId });
-                    table.ForeignKey(
-                        name: "FK_IngredientRecipe_Ingredients_IngredientsId",
-                        column: x => x.IngredientsId,
-                        principalTable: "Ingredients",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_IngredientRecipe_Recipes_RecipesId",
-                        column: x => x.RecipesId,
-                        principalTable: "Recipes",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "RecipeIngredients",
                 columns: table => new
                 {
                     RecipeId = table.Column<int>(type: "int", nullable: false),
-                    IngredientId = table.Column<int>(type: "int", nullable: false)
+                    IngredientId = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<decimal>(type: "decimal(6,2)", precision: 6, scale: 2, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RecipeIngredients", x => new { x.RecipeId, x.IngredientId });
+                    table.PrimaryKey("PK_RecipeIngredients", x => new { x.IngredientId, x.RecipeId });
                     table.ForeignKey(
                         name: "FK_RecipeIngredients_Ingredients_IngredientId",
                         column: x => x.IngredientId,
@@ -110,53 +80,20 @@ namespace MealPlannerAPI.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.InsertData(
-                table: "Ingredients",
-                columns: new[] { "Id", "Category", "Name" },
-                values: new object[,]
-                {
-                    { 1, "Baking", "Flour" },
-                    { 2, "Baking", "Sugar" },
-                    { 3, "Dairy", "Eggs" }
-                });
-
-            migrationBuilder.InsertData(
-                table: "Recipes",
-                columns: new[] { "Id", "Instructions", "Name", "Unit" },
-                values: new object[] { 1, "Mix ingredients and cook on griddle.", "Pancakes", "servings" });
-
-            migrationBuilder.InsertData(
-                table: "Inventory",
-                columns: new[] { "Id", "IngredientId", "Quantity", "Unit" },
-                values: new object[,]
-                {
-                    { 1, 1, 10m, "cups" },
-                    { 2, 2, 5m, "cups" },
-                    { 3, 3, 12m, "large" }
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_IngredientRecipe_RecipesId",
-                table: "IngredientRecipe",
-                column: "RecipesId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Inventory_IngredientId",
                 table: "Inventory",
                 column: "IngredientId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RecipeIngredients_IngredientId",
+                name: "IX_RecipeIngredients_RecipeId",
                 table: "RecipeIngredients",
-                column: "IngredientId");
+                column: "RecipeId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "IngredientRecipe");
-
             migrationBuilder.DropTable(
                 name: "Inventory");
 
