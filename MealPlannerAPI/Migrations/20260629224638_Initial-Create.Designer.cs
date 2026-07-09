@@ -3,6 +3,7 @@ using MealPlannerAPI.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MealPlannerAPI.Migrations
 {
     [DbContext(typeof(PlannerContext))]
-    partial class PlannerContextModelSnapshot : ModelSnapshot
+    [Migration("20260629224638_Initial-Create")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,30 +32,9 @@ namespace MealPlannerAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.ToTable("Ingredients");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Flour"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Sugar"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Eggs"
-                        });
                 });
 
             modelBuilder.Entity("MealPlannerAPI.Models.Inventory", b =>
@@ -79,29 +61,6 @@ namespace MealPlannerAPI.Migrations
                     b.HasIndex("IngredientId");
 
                     b.ToTable("Inventory");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            IngredientId = 1,
-                            Quantity = 10m,
-                            Unit = "cups"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            IngredientId = 2,
-                            Quantity = 5m,
-                            Unit = "cups"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            IngredientId = 3,
-                            Quantity = 12m,
-                            Unit = "large"
-                        });
                 });
 
             modelBuilder.Entity("MealPlannerAPI.Models.Recipe", b =>
@@ -112,20 +71,9 @@ namespace MealPlannerAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.ToTable("Recipes");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Pancakes"
-                        });
                 });
 
             modelBuilder.Entity("MealPlannerAPI.Models.RecipeIngredients", b =>
@@ -145,26 +93,6 @@ namespace MealPlannerAPI.Migrations
                     b.HasIndex("RecipeId");
 
                     b.ToTable("RecipeIngredients");
-
-                    b.HasData(
-                        new
-                        {
-                            IngredientId = 1,
-                            RecipeId = 1,
-                            Quantity = 2m
-                        },
-                        new
-                        {
-                            IngredientId = 2,
-                            RecipeId = 1,
-                            Quantity = 0.5m
-                        },
-                        new
-                        {
-                            IngredientId = 3,
-                            RecipeId = 1,
-                            Quantity = 2m
-                        });
                 });
 
             modelBuilder.Entity("MealPlannerAPI.Models.Inventory", b =>
