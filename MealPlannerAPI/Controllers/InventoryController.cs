@@ -85,15 +85,12 @@ namespace MealPlannerAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteInventory(int? id)
         {
-            using var context = await _contextFactory.CreateDbContextAsync();
-            var inventory = await context.Inventory.FindAsync(id);
+            var inventory = await _inventoryService.DeleteInventoryAsync(id);
+
             if (inventory == null)
             {
                 return NotFound();
             }
-
-            context.Inventory.Remove(inventory);
-            await context.SaveChangesAsync();
 
             return NoContent();
         }

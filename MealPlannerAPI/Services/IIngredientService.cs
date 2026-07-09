@@ -1,5 +1,6 @@
 ﻿using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Response;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MealPlannerAPI.Services
 {
@@ -9,5 +10,7 @@ namespace MealPlannerAPI.Services
         Task<IEnumerable<IngredientResponseDTO>> GetIngredientsAsync();
         Task<IngredientResponseDTO?> GetIngredientByIdAsync(int id);
         Task<IngredientResponseDTO?> PostIngredientAsync(CreateIngredientDTO createIngredientDTO);
+
+        Task<IngredientResponseDTO?> DeleteIngredientAsync(int? id);
     }
 }

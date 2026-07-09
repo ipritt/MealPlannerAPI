@@ -28,45 +28,69 @@ namespace MealPlannerAPI.Services
                 .Result?.Where(inv => inv.Id == id).FirstOrDefault();
         }
 
-        public async Task<InventoryResponseDTO?> PostInventoryAsync(CreateInventoryDTO inventoryDTO)
+        public async Task<InventoryResponseDTO?> PostInventoryAsync(CreateInventoryDTO createInventoryDTO)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            var inventory = new Inventory
-            {
-                IngredientId = inventoryDTO.IngredientId,
-                Name = inventoryDTO.Name,
-                InStockAmount = inventoryDTO.InStockAmount,
-                Unit = inventoryDTO.Unit
-            };
+            var inventory = MapEntityFromResponse(createInventoryDTO);
 
             await context.Inventory.AddAsync(inventory);
             await context.SaveChangesAsync();
 
-            return new InventoryResponseDTO
-            {
-                Id = inventory.Id,
-                IngredientId = inventoryDTO.IngredientId,
-                Name = inventory.Name,
-                InStockAmount = inventory.InStockAmount,
-                Unit = inventory.Unit
-            };
+            return MapResponseFromEntity(inventory);
         }
 
+        public async Task<InventoryResponseDTO?> DeleteInventoryAsync(int? id)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            var inventory = await context.Inventory.FindAsync(id);
+
+            if (inventory == null)
+            {
+                return null;
+            }
+
+            context.Inventory.Remove(inventory);
+            await context.SaveChangesAsync();
+
+            return MapResponseFromEntity(inventory);
+        }
+
+
+        #region Private Methods
         private async Task<IEnumerable<InventoryResponseDTO>> GetAllInventoryAsync()
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
             return await context.Inventory
                 .Include(inv => inv.Ingredient)
-                .Select(inv => new InventoryResponseDTO
-                {
-                    Id = inv.Id,
-                    IngredientId = inv.Ingredient.Id,
-                    Name = inv.Ingredient.Name,
-                    InStockAmount = inv.InStockAmount,
-                    Unit = inv.Ingredient.Unit,
-                }).ToListAsync();
+                .Select(inv => MapResponseFromEntity(inv)).ToListAsync();
         }
+
+        private static InventoryResponseDTO MapResponseFromEntity(Inventory inventory)
+        {
+            return new InventoryResponseDTO
+            {
+                Id = inventory.Id,
+                IngredientId = inventory.IngredientId,
+                Name = inventory.Name,
+                InStockAmount = inventory.InStockAmount,
+                Unit = inventory.Unit
+            };
+        }
+
+        private static Inventory MapEntityFromResponse(CreateInventoryDTO createInventoryDTO)
+        {
+            return new Inventory
+            {
+                IngredientId = createInventoryDTO.IngredientId,
+                Name = createInventoryDTO.Name,
+                InStockAmount = createInventoryDTO.InStockAmount,
+                Unit = createInventoryDTO.Unit
+            };
+        }
+
+        #endregion Private Methods
     }
 }

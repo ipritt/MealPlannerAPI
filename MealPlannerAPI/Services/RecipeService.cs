@@ -32,21 +32,44 @@ namespace MealPlannerAPI.Services
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            var recipe = new Recipe
-            {
-                Name = createRecipeDTO.Name,
-                Instructions = createRecipeDTO.Instructions,
-                Ingredients = [.. createRecipeDTO.Ingredients.Select(i => new Ingredient
-                {
-                    Name = i.Name,
-                    Category = i.Category,
-                    Unit = i.Unit
-                })]
-            };
+            var recipe = MapEntityFromResponse(createRecipeDTO);
 
             await context.Recipes.AddAsync(recipe);
             await context.SaveChangesAsync();
 
+            return MapResponseFromEntity(recipe);
+        }
+
+        public async Task<RecipeResponseDTO?> DeleteRecipeAsync(int? id)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            var recipe = await context.Recipes.FindAsync(id);
+
+            if (recipe == null)
+            {
+                return null;
+            }
+
+            context.Recipes.Remove(recipe);
+            await context.SaveChangesAsync();
+
+            return MapResponseFromEntity(recipe);
+        }
+
+
+        #region Private Methods
+        private async Task<IEnumerable<RecipeResponseDTO>> GetAllRecipesAsync()
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Recipes
+                .Include(r => r.Ingredients)
+                .Select(r => MapResponseFromEntity(r)).ToListAsync();
+        }
+
+        private static RecipeResponseDTO MapResponseFromEntity(Recipe recipe)
+        {
             return new RecipeResponseDTO
             {
                 Id = recipe.Id,
@@ -63,26 +86,21 @@ namespace MealPlannerAPI.Services
             };
         }
 
-        private async Task<IEnumerable<RecipeResponseDTO>> GetAllRecipesAsync()
+        private static Recipe MapEntityFromResponse(CreateRecipeDTO createRecipeDTO)
         {
-            using var context = await _contextFactory.CreateDbContextAsync();
-
-            return await context.Recipes
-                .Include(r => r.Ingredients)
-                .Select(r => new RecipeResponseDTO
+            return new Recipe
+            {
+                Name = createRecipeDTO.Name,
+                Instructions = createRecipeDTO.Instructions,
+                Ingredients = [.. createRecipeDTO.Ingredients.Select(i => new Ingredient
                 {
-                    Id = r.Id,
-                    Name = r.Name,
-                    Instructions = r.Instructions,
-                    Ingredients = r.Ingredients.Select(i => new IngredientResponseDTO
-                    {
-                        Id = i.Id,
-                        Name = i.Name,
-                        Category = i.Category,
-                        Unit = i.Unit,
-                        UsedInRecipes = i.Recipes.Select(r => r.Id).ToList()
-                    }).ToList()
-                }).ToListAsync();
+                    Name = i.Name,
+                    Category = i.Category,
+                    Unit = i.Unit
+                })]
+            };
         }
+
+        #endregion Private Methods
     }
 }

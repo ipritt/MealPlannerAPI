@@ -84,16 +84,12 @@ namespace MealPlannerAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRecipe(int? id)
         {
-            using var context = await _contextFactory.CreateDbContextAsync();
-            var recipe = await context.Recipes.FindAsync(id);
+            var recipe =  await _recipeService.DeleteRecipeAsync(id);
 
             if (recipe == null)
             {
                 return NotFound();
             }
-
-            context.Recipes.Remove(recipe);
-            await context.SaveChangesAsync();
 
             return NoContent();
         }

@@ -73,7 +73,7 @@ namespace MealPlannerAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<IngredientResponseDTO>> PostIngredient([FromBody] CreateIngredientDTO createIngredientDTO)
         {
-            using var context = await _contextFactory.CreateDbContextAsync();
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var responseDTO = await _ingredientService.PostIngredientAsync(createIngredientDTO);
 
@@ -84,15 +84,12 @@ namespace MealPlannerAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteIngredient(int? id)
         {
-            using var context = await _contextFactory.CreateDbContextAsync();
-            var ingredient = await context.Ingredients.FindAsync(id);
+            var ingredient = await _ingredientService.DeleteIngredientAsync(id);
+
             if (ingredient == null)
             {
                 return NotFound();
             }
-
-            context.Ingredients.Remove(ingredient);
-            await context.SaveChangesAsync();
 
             return NoContent();
         }
