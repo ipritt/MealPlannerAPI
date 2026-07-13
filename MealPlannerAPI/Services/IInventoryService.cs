@@ -1,16 +1,15 @@
 ﻿using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Response;
-using Microsoft.AspNetCore.Mvc;
+using MealPlannerAPI.Models.Utility;
 
 namespace MealPlannerAPI.Services
 {
     public interface IInventoryService
     {
-        Task<bool> InventoryExistsAsync(int? id);
-        Task<IEnumerable<InventoryResponseDTO>> GetInventoryAsync();
-        Task<InventoryResponseDTO?> GetInventoryByIdAsync(int id);
-        Task<InventoryResponseDTO?> PostInventoryAsync(CreateInventoryDTO inventoryDTO);
-
-        Task<InventoryResponseDTO?> DeleteInventoryAsync(int? id);
+        Task<Result<IEnumerable<InventoryResponseDTO>>> GetInventoryAsync();
+        Task<Result<InventoryResponseDTO>> GetInventoryByIdAsync(int id);
+        Task<Result<InventoryResponseDTO>> PostInventoryAsync(CreateInventoryDTO createInventoryDTO);
+        Task<Result<InventoryResponseDTO>> PutInventoryAsync(CreateInventoryDTO createInventoryDTO, int? id);
+        Task<Result<InventoryResponseDTO>> DeleteInventoryAsync(int? id);
     }
 }

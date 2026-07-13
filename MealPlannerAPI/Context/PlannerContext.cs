@@ -1,4 +1,4 @@
-﻿using MealPlannerAPI.Models;
+﻿using MealPlannerAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace MealPlannerAPI.Context

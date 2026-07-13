@@ -1,16 +1,15 @@
 ﻿using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Response;
-using Microsoft.AspNetCore.Mvc;
+using MealPlannerAPI.Models.Utility;
 
 namespace MealPlannerAPI.Services
 {
     public interface IIngredientService
     {
-        Task<bool> IngredientExistsAsync(int? id);
-        Task<IEnumerable<IngredientResponseDTO>> GetIngredientsAsync();
-        Task<IngredientResponseDTO?> GetIngredientByIdAsync(int id);
-        Task<IngredientResponseDTO?> PostIngredientAsync(CreateIngredientDTO createIngredientDTO);
-
-        Task<IngredientResponseDTO?> DeleteIngredientAsync(int? id);
+        Task<Result<IEnumerable<IngredientResponseDTO>>> GetIngredientsAsync();
+        Task<Result<IngredientResponseDTO>> GetIngredientByIdAsync(int id);
+        Task<Result<IngredientResponseDTO>> PostIngredientAsync(CreateIngredientDTO createIngredientDTO);
+        Task<Result<IngredientResponseDTO>> PutIngredientAsync(CreateIngredientDTO createIngredientDTO, int? id);
+        Task<Result<IngredientResponseDTO>> DeleteIngredientAsync(int? id);
     }
 }

@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace MealPlannerAPI.Models
+﻿namespace MealPlannerAPI.Models.Entities
 {
     public class RecipeIngredients
     {

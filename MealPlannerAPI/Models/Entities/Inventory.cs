@@ -1,4 +1,4 @@
-﻿namespace MealPlannerAPI.Models
+﻿namespace MealPlannerAPI.Models.Entities
 {
     public class Inventory
     {

@@ -1,8 +1,10 @@
 ﻿using MealPlannerAPI.Context;
-using MealPlannerAPI.Models;
 using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Response;
+using MealPlannerAPI.Models.Entities;
+using MealPlannerAPI.Models.Utility;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace MealPlannerAPI.Services
 {
@@ -10,67 +12,157 @@ namespace MealPlannerAPI.Services
     {
         private readonly IDbContextFactory<PlannerContext> _contextFactory = contextFactory;
 
-        public async Task<bool> IngredientExistsAsync(int? id)
+        public async Task<Result<IEnumerable<IngredientResponseDTO>>> GetIngredientsAsync()
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            return await context.Ingredients.AnyAsync(e => e.Id == id);
+            var ingredientResponseDTO = await context.Ingredients
+                .Include(i => i.Recipes)
+                .Select(i => MapResponseFromEntity(i)).ToListAsync();
+
+            var errors = new List<Error>();
+
+            if (ingredientResponseDTO == null || ingredientResponseDTO.Count == 0)
+            {
+                errors.Add(new Error("Ingredients", "No ingredients found.", ErrorType.NotFound));
+            }
+
+            if (errors.Count != 0)
+            {
+                return Result<IEnumerable<IngredientResponseDTO>>.Failure(errors);
+            }
+
+            return Result<IEnumerable<IngredientResponseDTO>>.Success(ingredientResponseDTO);
         }
 
-        public async Task<IEnumerable<IngredientResponseDTO>> GetIngredientsAsync()
-        {
-            return await GetAllIngredientsAsync();
-        }
-
-        public async Task<IngredientResponseDTO?> GetIngredientByIdAsync(int id)
-        {
-            return GetAllIngredientsAsync()
-                .Result?.Where(inv => inv.Id == id).FirstOrDefault();
-        }
-
-        public async Task<IngredientResponseDTO?> PostIngredientAsync(CreateIngredientDTO createIngredientDTO)
+        public async Task<Result<IngredientResponseDTO>> GetIngredientByIdAsync(int id)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            var ingredient = MapEntityFromResponse(createIngredientDTO);
+            var ingredient = await context.Ingredients
+                .Include(i => i.Recipes)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            var errors = new List<Error>();
+
+            if (ingredient == null)
+            {
+                errors.Add(new Error($"Ingredient.{id}", "Ingredient not found.", ErrorType.NotFound));
+            }
+
+            if (errors.Count != 0)
+            {
+                return Result<IngredientResponseDTO>.Failure(errors);
+            }
+
+            return Result<IngredientResponseDTO>.Success(MapResponseFromEntity(ingredient));
+        }
+
+        public async Task<Result<IngredientResponseDTO>> PutIngredientAsync(CreateIngredientDTO createIngredientDTO, int? id)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            context.Entry(MapEntityFromResponse(createIngredientDTO, id)).State = EntityState.Modified;
+
+            var errors = new List<Error>();
+
+            try
+            {
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // TODO: Implement proper ingredient existence check using a unique identifier (GUID cache) or other criteria
+                // Check HybridCache library
+                if (!await context.Ingredients.AnyAsync(i => i.Id == id))
+                {
+                    errors.Add(new Error($"Ingredient.{id}", "Ingredient not found.", ErrorType.NotFound));
+                }
+                else
+                {
+                    throw;
+                }
+
+                if (errors.Count != 0)
+                {
+                    return Result<IngredientResponseDTO>.Failure(errors);
+                }
+            }
+
+            return Result<IngredientResponseDTO>.Success(new IngredientResponseDTO());
+        }
+
+        public async Task<Result<IngredientResponseDTO>> PostIngredientAsync(CreateIngredientDTO createIngredientDTO)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            // TODO: Implement proper ingredient existence check using a unique identifier (GUID cache) or other criteria
+            // Check HybridCache library
+            var ingredientExists = await context.Ingredients
+                .AnyAsync(i => string.Equals(i.Name, createIngredientDTO.Name));
+
+            var errors = new List<Error>();
+
+            if (ingredientExists)
+            {
+                errors.Add(new Error($"Ingredient.Name = {createIngredientDTO.Name}", 
+                    "Ingredient already exists.", ErrorType.Conflict));
+
+                return Result<IngredientResponseDTO>.Failure(errors);
+            }
+
+            var ingredient = MapEntityFromResponse(createIngredientDTO, null);
 
             await context.Ingredients.AddAsync(ingredient);
             await context.SaveChangesAsync();
 
-            return MapResponseFromEntity(ingredient);
+            return Result<IngredientResponseDTO>.Success
+            (
+                MapResponseFromEntity(await context.Ingredients
+                    .Include(i => i.Recipes)
+                    .FirstOrDefaultAsync(i => i.Name == createIngredientDTO.Name))
+            );
         }
 
-        public async Task<IngredientResponseDTO?> DeleteIngredientAsync(int? id)
+        public async Task<Result<IngredientResponseDTO>> DeleteIngredientAsync(int? id)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            var ingredient = await context.Ingredients.FindAsync(id);
+            var ingredient = await context.Ingredients
+                .Include(i => i.Recipes).FirstOrDefaultAsync(i => i.Id == id);
+
+            var errors = new List<Error>();
 
             if (ingredient == null)
             {
-                return null;
+                errors.Add(new Error("Ingredient", "Ingredient not found.", ErrorType.NotFound));
             }
 
-            context.Ingredients.Remove(ingredient);
+            // Don't delete the ingredient if it is used in any recipes
+            if (ingredient == null || ingredient.Recipes.Count != 0)
+            {
+                errors.Add(new Error("Ingredient", "Cannot delete ingredient that is used in recipes.", ErrorType.Conflict));
+            }
+
+            if (errors.Count != 0)
+            {
+                return Result<IngredientResponseDTO>.Failure(errors);
+            }
+
+            context.Ingredients.Remove(ingredient ?? new Ingredient());
             await context.SaveChangesAsync();
 
-            return MapResponseFromEntity(ingredient);
+            return Result<IngredientResponseDTO>.Success(MapResponseFromEntity(ingredient));
         }
 
 
         #region Private Methods
-        private async Task<IEnumerable<IngredientResponseDTO>> GetAllIngredientsAsync()
-        {
-            using var context = await _contextFactory.CreateDbContextAsync();
 
-            return await context.Ingredients
-                .Include(i => i.Recipes)
-                .Select(i => MapResponseFromEntity(i)).ToListAsync();
-        }
-
-        private static IngredientResponseDTO MapResponseFromEntity(Ingredient ingredient)
+        // TODO: Consider using AutoMapper for mapping between entities
+        // or handle these mappings in the models themselves, or in a separate mapping class
+        private static IngredientResponseDTO MapResponseFromEntity(Ingredient? ingredient)
         {
-            return new IngredientResponseDTO
+            return ingredient == null ? new IngredientResponseDTO() : new IngredientResponseDTO
             {
                 Id = ingredient.Id,
                 Name = ingredient.Name,
@@ -80,10 +172,11 @@ namespace MealPlannerAPI.Services
             };
         }
 
-        private static Ingredient MapEntityFromResponse(CreateIngredientDTO createIngredientDTO)
+        private static Ingredient MapEntityFromResponse(CreateIngredientDTO createIngredientDTO, int? id)
         {
             return new Ingredient
             {
+                Id = id ?? 0,
                 Name = createIngredientDTO.Name,
                 Category = createIngredientDTO.Category,
                 Unit = createIngredientDTO.Unit

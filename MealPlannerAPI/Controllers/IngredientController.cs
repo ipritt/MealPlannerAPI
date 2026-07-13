@@ -1,68 +1,44 @@
-using MealPlannerAPI.Context;
 using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Response;
 using MealPlannerAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace MealPlannerAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class IngredientController(IDbContextFactory<PlannerContext> contextFactory,
-        IIngredientService ingredientService) : ControllerBase
+    public class IngredientController(IIngredientService ingredientService) : ApiControllerBase
     {
-        private readonly IDbContextFactory<PlannerContext> _contextFactory = contextFactory;
         private readonly IIngredientService _ingredientService = ingredientService;
 
         // GET: api/Ingredients
         [HttpGet]
         public async Task<ActionResult<IEnumerable<IngredientResponseDTO>>> GetIngredient()
         {
-            return Ok(await _ingredientService.GetIngredientsAsync());
+            var result = await _ingredientService.GetIngredientsAsync();
+
+            return HandleResult(result);
         }
 
         // GET: api/Ingredient/5
         [HttpGet("{id:int}")]
         public async Task<ActionResult<IngredientResponseDTO>> GetIngredientById([FromRoute] int id)
         {
-            var ingredient = await _ingredientService.GetIngredientByIdAsync(id);
+            var result = await _ingredientService.GetIngredientByIdAsync(id);
 
-            if (ingredient == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(ingredient);
+            return HandleResult(result);
         }
 
         // PUT: api/Ingredient/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutIngredient(int? id, IngredientResponseDTO ingredient)
+        [HttpPut("{id:int}")]
+        public async Task<ActionResult<IngredientResponseDTO>> PutIngredient(CreateIngredientDTO createIngredientDTO, int? id)
         {
-            if (id != ingredient.Id)
-            {
-                return BadRequest();
-            }
+            var result = await _ingredientService.PutIngredientAsync(createIngredientDTO, id);
 
-            using var context = await _contextFactory.CreateDbContextAsync();
-            context.Entry(ingredient).State = EntityState.Modified;
-
-            try
+            if (result.IsFailure)
             {
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await _ingredientService.IngredientExistsAsync(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return HandleResult(result);
             }
 
             return NoContent();
@@ -75,20 +51,20 @@ namespace MealPlannerAPI.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var responseDTO = await _ingredientService.PostIngredientAsync(createIngredientDTO);
+            var result = await _ingredientService.PostIngredientAsync(createIngredientDTO);
 
-            return CreatedAtAction(nameof(GetIngredientById), new { id = responseDTO?.Id }, responseDTO);
+            return HandleResult(result);
         }
 
         // DELETE: api/Ingredient/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteIngredient(int? id)
+        [HttpDelete("{id:int}")]
+        public async Task<ActionResult<IngredientResponseDTO>> DeleteIngredient(int? id)
         {
-            var ingredient = await _ingredientService.DeleteIngredientAsync(id);
+            var result = await _ingredientService.DeleteIngredientAsync(id);
 
-            if (ingredient == null)
+            if (result.IsFailure)
             {
-                return NotFound();
+                return HandleResult(result);
             }
 
             return NoContent();
