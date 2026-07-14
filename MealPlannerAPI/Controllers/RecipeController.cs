@@ -17,7 +17,7 @@ namespace MealPlannerAPI.Controllers
         {
             var result = await _recipeService.GetRecipesAsync();
 
-            return HandleResult(result);
+            return HandleResult(result, false);
         }
 
         // GET: api/Recipe/5
@@ -26,48 +26,42 @@ namespace MealPlannerAPI.Controllers
         {
             var result = await _recipeService.GetRecipeByIdAsync(id);
 
-            return HandleResult(result);
+            return HandleResult(result, false);
         }
 
         // PUT: api/Recipe/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<ActionResult<RecipeResponseDTO>> PutRecipe(CreateRecipeDTO createRecipeDTO, int? id)
+        public async Task<ActionResult<RecipeResponseDTO>> PutRecipe(
+            [FromBody] CreateRecipeDTO createRecipeDTO, [FromRoute] int? id)
         {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
             var result = await _recipeService.PutRecipeAsync(createRecipeDTO, id);
 
-            if (result.IsFailure)
-            {
-                return HandleResult(result);
-            }
-
-            return NoContent();
+            return HandleResult(result, true);
         }
 
         // POST: api/Recipe
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<RecipeResponseDTO>> PostRecipe([FromBody] CreateRecipeDTO createRecipeDTO)
+        public async Task<ActionResult<RecipeResponseDTO>> PostRecipe(
+            [FromBody] CreateRecipeDTO createRecipeDTO)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var result = await _recipeService.PostRecipeAsync(createRecipeDTO);
 
-            return HandleResult(result);
+            return HandleResult(result, false);
         }
 
         // DELETE: api/Recipe/5
         [HttpDelete("{id}")]
-        public async Task<ActionResult<RecipeResponseDTO>> DeleteRecipe(int? id)
+        public async Task<ActionResult<RecipeResponseDTO>> DeleteRecipe([FromRoute] int? id)
         {
             var result = await _recipeService.DeleteRecipeAsync(id);
 
-            if (result.IsFailure)
-            {
-                return HandleResult(result);
-            }
-
-            return NoContent();
+            return HandleResult(result, true);
         }
     }
 }

@@ -6,10 +6,15 @@ namespace MealPlannerAPI.Controllers
     [ApiController]
     public abstract class ApiControllerBase : ControllerBase
     {
-        protected ActionResult<T> HandleResult<T>(Result<T> result)
+        protected ActionResult<T> HandleResult<T>(Result<T> result, bool? hasNoContent)
         {
             if (result.IsSuccess)
             {
+                if (hasNoContent == true)
+                {
+                    return NoContent();
+                }
+
                 return Ok(result.Value);
             }
 
