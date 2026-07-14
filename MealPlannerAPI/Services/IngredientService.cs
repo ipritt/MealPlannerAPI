@@ -18,8 +18,10 @@ namespace MealPlannerAPI.Services
 
             var ingredientResponseDTO = await context.Ingredients
                 .Include(i => i.Recipes)
-                .Select(i => MapResponseFromEntity(i)).ToListAsync();
+                .Select(i => i.ToResponseDTO(i)).ToListAsync();
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             if (ingredientResponseDTO == null || ingredientResponseDTO.Count == 0)
@@ -43,6 +45,8 @@ namespace MealPlannerAPI.Services
                 .Include(i => i.Recipes)
                 .FirstOrDefaultAsync(i => i.Id == id);
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             if (ingredient == null)
@@ -55,19 +59,22 @@ namespace MealPlannerAPI.Services
                 return Result<IngredientResponseDTO>.Failure(errors);
             }
 
-            return Result<IngredientResponseDTO>.Success(MapResponseFromEntity(ingredient));
+            return Result<IngredientResponseDTO>.Success(ingredient?.ToResponseDTO(ingredient));
         }
 
         public async Task<Result<IngredientResponseDTO>> PutIngredientAsync(CreateIngredientDTO createIngredientDTO, int? id)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            context.Entry(MapEntityFromResponse(createIngredientDTO, id)).State = EntityState.Modified;
+            context.Entry(createIngredientDTO.ToEntity(createIngredientDTO, id)).State = EntityState.Modified;
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             try
             {
+                // TODO: Add exception handling here
                 await context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
@@ -101,6 +108,8 @@ namespace MealPlannerAPI.Services
             var ingredientExists = await context.Ingredients
                 .AnyAsync(i => string.Equals(i.Name, createIngredientDTO.Name));
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             if (ingredientExists)
@@ -111,16 +120,17 @@ namespace MealPlannerAPI.Services
                 return Result<IngredientResponseDTO>.Failure(errors);
             }
 
-            var ingredient = MapEntityFromResponse(createIngredientDTO, null);
+            var ingredient = createIngredientDTO.ToEntity(createIngredientDTO, null);
 
+            // TODO: Add exception handling here
             await context.Ingredients.AddAsync(ingredient);
             await context.SaveChangesAsync();
 
             return Result<IngredientResponseDTO>.Success
             (
-                MapResponseFromEntity(await context.Ingredients
+                ingredient.ToResponseDTO(await context.Ingredients
                     .Include(i => i.Recipes)
-                    .FirstOrDefaultAsync(i => i.Name == createIngredientDTO.Name))
+                    .FirstAsync(i => i.Name == createIngredientDTO.Name))
             );
         }
 
@@ -131,17 +141,24 @@ namespace MealPlannerAPI.Services
             var ingredient = await context.Ingredients
                 .Include(i => i.Recipes).FirstOrDefaultAsync(i => i.Id == id);
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             if (ingredient == null)
             {
                 errors.Add(new Error("Ingredient", "Ingredient not found.", ErrorType.NotFound));
             }
-
-            // Don't delete the ingredient if it is used in any recipes
-            if (ingredient == null || ingredient.Recipes.Count != 0)
+            else if (ingredient.Recipes.Count != 0) // Don't delete the ingredient if it is used in any recipes
             {
-                errors.Add(new Error("Ingredient", "Cannot delete ingredient that is used in recipes.", ErrorType.Conflict));
+                errors.Add(new Error("Ingredient", "Cannot delete an ingredient that is used in recipes.", ErrorType.Conflict));
+            }
+            else
+            {
+                context.Ingredients.Remove(ingredient);
+
+                // TODO: Add exception handling here
+                await context.SaveChangesAsync();
             }
 
             if (errors.Count != 0)
@@ -149,40 +166,7 @@ namespace MealPlannerAPI.Services
                 return Result<IngredientResponseDTO>.Failure(errors);
             }
 
-            context.Ingredients.Remove(ingredient ?? new Ingredient());
-            await context.SaveChangesAsync();
-
-            return Result<IngredientResponseDTO>.Success(MapResponseFromEntity(ingredient));
+            return Result<IngredientResponseDTO>.Success(ingredient?.ToResponseDTO(ingredient));
         }
-
-
-        #region Private Methods
-
-        // TODO: Consider using AutoMapper for mapping between entities
-        // or handle these mappings in the models themselves, or in a separate mapping class
-        private static IngredientResponseDTO MapResponseFromEntity(Ingredient? ingredient)
-        {
-            return ingredient == null ? new IngredientResponseDTO() : new IngredientResponseDTO
-            {
-                Id = ingredient.Id,
-                Name = ingredient.Name,
-                Category = ingredient.Category,
-                Unit = ingredient.Unit,
-                UsedInRecipes = [.. ingredient.Recipes.Select(r => r.Id)]
-            };
-        }
-
-        private static Ingredient MapEntityFromResponse(CreateIngredientDTO createIngredientDTO, int? id)
-        {
-            return new Ingredient
-            {
-                Id = id ?? 0,
-                Name = createIngredientDTO.Name,
-                Category = createIngredientDTO.Category,
-                Unit = createIngredientDTO.Unit
-            };
-        }
-
-        #endregion Private Methods
     }
 }

@@ -17,8 +17,10 @@ namespace MealPlannerAPI.Services
 
             var inventoryResponseDTO = await context.Inventory
                 .Include(inv => inv.Ingredient)
-                .Select(inv => MapResponseFromEntity(inv)).ToListAsync();
+                .Select(inv => inv.ToResponseDTO(inv)).ToListAsync();
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             if (inventoryResponseDTO == null || inventoryResponseDTO.Count == 0)
@@ -42,6 +44,8 @@ namespace MealPlannerAPI.Services
                 .Include(inv => inv.Ingredient)
                 .FirstOrDefaultAsync(inv => inv.Id == id);
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             if (inventory == null)
@@ -54,19 +58,22 @@ namespace MealPlannerAPI.Services
                 return Result<InventoryResponseDTO>.Failure(errors);
             }
 
-            return Result<InventoryResponseDTO>.Success(MapResponseFromEntity(inventory));
+            return Result<InventoryResponseDTO>.Success(inventory?.ToResponseDTO(inventory));
         }
 
         public async Task<Result<InventoryResponseDTO>> PutInventoryAsync(CreateInventoryDTO createInventoryDTO, int? id)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            context.Entry(MapEntityFromResponse(createInventoryDTO, id)).State = EntityState.Modified;
+            context.Entry(createInventoryDTO.ToEntity(createInventoryDTO, id)).State = EntityState.Modified;
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             try
             {
+                // TODO: Add exception handling here
                 await context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
@@ -100,6 +107,8 @@ namespace MealPlannerAPI.Services
             var ingredientExists = await context.Ingredients
                 .AnyAsync(i => string.Equals(i.Name, createInventoryDTO.Name));
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             if (ingredientExists)
@@ -110,16 +119,17 @@ namespace MealPlannerAPI.Services
                 return Result<InventoryResponseDTO>.Failure(errors);
             }
 
-            var inventory = MapEntityFromResponse(createInventoryDTO, null);
+            var inventory = createInventoryDTO.ToEntity(createInventoryDTO, null);
 
+            // TODO: Add exception handling here
             await context.Inventory.AddAsync(inventory);
             await context.SaveChangesAsync();
 
             return Result<InventoryResponseDTO>.Success
             (
-                MapResponseFromEntity(await context.Inventory
+                inventory.ToResponseDTO(await context.Inventory
                     .Include(i => i.Ingredient)
-                    .FirstOrDefaultAsync(i => i.Name == createInventoryDTO.Name))
+                    .FirstAsync(i => i.Name == createInventoryDTO.Name))
             );
         }
 
@@ -131,17 +141,24 @@ namespace MealPlannerAPI.Services
                 .Include(i => i.Ingredient)
                 .FirstOrDefaultAsync(i => i.Id == id);
 
+            // TODO: handle validations in separate validation layer or service,
+            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
             if (inventory == null)
             {
                 errors.Add(new Error("Inventory", "Inventory item not found.", ErrorType.NotFound));
             }
-
-            // Don't delete the inventory item if it is used in any recipes
-            if (inventory == null || inventory.Ingredient.Recipes.Count != 0)
+            else if (inventory.Ingredient.Recipes.Count != 0) // Don't delete the inventory item if it is used in any recipes
             {
-                errors.Add(new Error("Inventory", "Cannot delete inventory item that is used in recipes.", ErrorType.Conflict));
+                errors.Add(new Error("Inventory", "Cannot delete an inventory item that is used in recipes.", ErrorType.Conflict));
+            }
+            else
+            {
+                context.Inventory.Remove(inventory);
+
+                // TODO: Add exception handling here
+                await context.SaveChangesAsync();
             }
 
             if (errors.Count != 0)
@@ -149,41 +166,7 @@ namespace MealPlannerAPI.Services
                 return Result<InventoryResponseDTO>.Failure(errors);
             }
 
-            context.Inventory.Remove(inventory ?? new Inventory());
-            await context.SaveChangesAsync();
-
-            return Result<InventoryResponseDTO>.Success(MapResponseFromEntity(inventory));
+            return Result<InventoryResponseDTO>.Success(inventory?.ToResponseDTO(inventory));
         }
-
-
-        #region Private Methods
-
-        // TODO: Consider using AutoMapper for mapping between entities
-        // or handle these mappings in the models themselves, or in a separate mapping class
-        private static InventoryResponseDTO MapResponseFromEntity(Inventory? inventory)
-        {
-            return inventory == null ? new InventoryResponseDTO() : new InventoryResponseDTO
-            {
-                Id = inventory.Id,
-                IngredientId = inventory.IngredientId,
-                Name = inventory.Ingredient.Name,
-                InStockAmount = inventory.InStockAmount,
-                Unit = inventory.Ingredient.Unit
-            };
-        }
-
-        private static Inventory MapEntityFromResponse(CreateInventoryDTO createInventoryDTO, int? id)
-        {
-            return new Inventory
-            {
-                Id = id ?? 0,
-                IngredientId = createInventoryDTO.IngredientId,
-                Name = createInventoryDTO.Name,
-                InStockAmount = createInventoryDTO.InStockAmount,
-                Unit = createInventoryDTO.Unit
-            };
-        }
-
-        #endregion Private Methods
     }
 }

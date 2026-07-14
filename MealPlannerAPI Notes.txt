@@ -1,19 +1,28 @@
 MealPlanner Notes
 
-PUT returns 204
+PUT returns 204 NoContent
 POST returns 201 and inserted model
+DELETE returns 
 
-Questions/ToDos???
--Move mappings into DTOs or separate mapping class, maybe look at AutoMapper
--More testing and think of addition rules/validations
+Questions
+
+Decisions
 -Consider paging for GetAll endpoints
 -Consider handling race conditions for updates and deletes
+
+
+ToDos
+-More testing and think of addition rules/validations
 -Handle all possible exceptions and return appropriate status codes
 -Start thinking about how to handle authentication and authorization
+-How to handle blob storage and retreival, possible to update? For recipe pdf and txt uploads
+-Centralize error handling even more, each service method has nearly identical code for it
+-Handle validations in separate validation layer or service, and return a list of errors instead of throwing exceptions
 
 
-Current issues getting crud operations working
-
+Current issues
+-Recipe ingredients UsedByRecipes is borked - the first recipe is only seeing itself, so all ingredients are only used in the one recipe, second recipe is correct
+-Recipe Add is adding ingredients even if they already exist
 
 
 DONE --GetAllInventory isn't returning values for Name or Unit - Needed to return inventory.Ingredient.Name and inventory.Ingredient.Unit instead of inventory.Name and inventory.Unit in MapResponseFromEntity
@@ -22,3 +31,4 @@ DONE --Concering the two points above, POSTing an invetory item with values for 
 DONE --What should be returned for a successful Post? DONE - 201 and model
 DONE --When all crud oprations are functional, need to include some restrictions like when and what can be deleted, prevent adding an identical record, etc
 DONE --GetIngredientsById isn't returning UsedByRecipes data
+Done --Move mappings into DTOs or separate mapping class, maybe look at AutoMapper -Moved mapping from services to models for now
