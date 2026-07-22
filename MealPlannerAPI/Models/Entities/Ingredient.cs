@@ -9,9 +9,8 @@ namespace MealPlannerAPI.Models.Entities
         public string Category { get; set; } = string.Empty;
         public string Unit { get; internal set; } = string.Empty;
         public ICollection<Recipe> Recipes { get; set; } = [];
-        public ICollection<RecipeIngredients> RecipeIngredients { get; set; } = [];
 
-        public IngredientResponseDTO ToResponseDTO(Ingredient ingredient)
+        public IngredientResponseDTO ToResponseDTO(Ingredient ingredient, decimal? inStockAmount)
         {
             return new IngredientResponseDTO
             {
@@ -19,6 +18,7 @@ namespace MealPlannerAPI.Models.Entities
                 Name = ingredient.Name,
                 Category = ingredient.Category,
                 Unit = ingredient.Unit,
+                InStockAmount = inStockAmount ?? 0,
                 UsedInRecipes = [.. ingredient.Recipes.Select(r => r.Id)]
             };
         }

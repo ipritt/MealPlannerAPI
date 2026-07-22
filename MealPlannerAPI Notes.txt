@@ -21,8 +21,9 @@ ToDos
 
 
 Current issues
--Recipe ingredients UsedByRecipes is borked - the first recipe is only seeing itself, so all ingredients are only used in the one recipe, second recipe is correct
--Recipe Add is adding ingredients even if they already exist
+-When adding a new ingredient, should require an amount for InstockAmount 
+	(could be zero, but if going to be used in a recipe, needs to have at least as much as the recipe requires, but that's a recipe rule, not an ingredient rule)
+-Recipe Add is adding ingredients even if they already exist - Hiding or removing Ingredients from RecipeDTO and only having IngredientId forgien key.
 
 
 DONE --GetAllInventory isn't returning values for Name or Unit - Needed to return inventory.Ingredient.Name and inventory.Ingredient.Unit instead of inventory.Name and inventory.Unit in MapResponseFromEntity
@@ -31,4 +32,8 @@ DONE --Concering the two points above, POSTing an invetory item with values for 
 DONE --What should be returned for a successful Post? DONE - 201 and model
 DONE --When all crud oprations are functional, need to include some restrictions like when and what can be deleted, prevent adding an identical record, etc
 DONE --GetIngredientsById isn't returning UsedByRecipes data
-Done --Move mappings into DTOs or separate mapping class, maybe look at AutoMapper -Moved mapping from services to models for now
+DONE --Move mappings into DTOs or separate mapping class, maybe look at AutoMapper -Moved mapping from services to models for now
+DONE --Recipe ingredient quantity not working - Created seperate RecipeIngredientResponseDTO to return Quantity for recipe ingredients and InstockAmount for Ingredient
+DONE --Ingredient InStockAmount not working - Created seperate RecipeIngredientResponseDTO to return Quantity for recipe ingredients and InstockAmount for Ingredient
+DONE --Recipe ingredients UsedByRecipes is borked - the first recipe is only seeing itself, so all ingredients are only used in the one recipe, second recipe is correct
+		- Needed to get all recipes then pass into Mapping function because it only had the recipes for each iteration

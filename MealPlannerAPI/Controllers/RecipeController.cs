@@ -1,4 +1,5 @@
 using MealPlannerAPI.Models.DTOs.Create;
+using MealPlannerAPI.Models.DTOs.Request;
 using MealPlannerAPI.Models.DTOs.Response;
 using MealPlannerAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -31,13 +32,13 @@ namespace MealPlannerAPI.Controllers
 
         // PUT: api/Recipe/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<ActionResult<RecipeResponseDTO>> PutRecipe(
-            [FromBody] CreateRecipeDTO createRecipeDTO, [FromRoute] int? id)
+        [HttpPut("{id:int}")]
+        public async Task<ActionResult<RecipeResponseDTO>> UpdateRecipe(
+            [FromBody] RecipeRequestDTO recipeDTO, [FromRoute] int? id)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var result = await _recipeService.PutRecipeAsync(createRecipeDTO, id);
+            var result = await _recipeService.UpdateRecipeAsync(recipeDTO, id);
 
             return HandleResult(result, true);
         }
@@ -45,18 +46,18 @@ namespace MealPlannerAPI.Controllers
         // POST: api/Recipe
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<RecipeResponseDTO>> PostRecipe(
-            [FromBody] CreateRecipeDTO createRecipeDTO)
+        public async Task<ActionResult<RecipeResponseDTO>> CreateRecipe(
+            [FromBody] RecipeRequestDTO recipeDTO)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var result = await _recipeService.PostRecipeAsync(createRecipeDTO);
+            var result = await _recipeService.CreateRecipeAsync(recipeDTO);
 
             return HandleResult(result, false);
         }
 
         // DELETE: api/Recipe/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<ActionResult<RecipeResponseDTO>> DeleteRecipe([FromRoute] int? id)
         {
             var result = await _recipeService.DeleteRecipeAsync(id);

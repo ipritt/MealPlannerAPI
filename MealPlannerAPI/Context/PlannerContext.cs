@@ -12,6 +12,11 @@ namespace MealPlannerAPI.Context
                 .WithMany(r => r.Recipes)
                 .UsingEntity<RecipeIngredients>();
 
+            modelBuilder.Entity<Ingredient>()
+                .HasMany(i => i.Recipes)
+                .WithMany(r => r.Ingredients)
+                .UsingEntity<RecipeIngredients>();
+
             modelBuilder.Entity<RecipeIngredients>()
                 .Property(ri => ri.Quantity)
                 .HasPrecision(6, 2);

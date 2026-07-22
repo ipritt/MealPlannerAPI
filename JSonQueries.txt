@@ -1,0 +1,61 @@
+Add Ingredients
+{
+  "name": "Peanut Butter",
+  "category": "Proteins",
+  "unit": "Tbsp"
+},
+{
+  "name": "Jelly",
+  "category": "Sweet Spreads",
+  "unit": "Tbsp"
+},
+{
+  "name": "Bread",
+  "category": "Grains",
+  "unit": "slices"
+}
+
+Add Recipe
+{
+  "name": "Peanut Butter and Jelly Sandwich",
+  "instructions": "Spread peanut butter on one piece of bread. Spread jelly on another piece of bread. Put two slices together. Enjoy!",
+  "recipeIngredients": [
+    {
+      "ingredientId": 4,
+      "quantity": 2
+    },
+    {
+      "ingredientId": 5,
+      "quantity": 2
+    },
+    {
+      "ingredientId": 6,
+      "quantity": 2
+    }
+  ]
+}
+
+
+	
+Update Recipe
+{
+  "id": 2,
+  "name": "Waffles",
+  "instructions": "Mix ingredients and cook in waffle iron.",
+  "recipeIngredients": [
+    {
+      "ingredientId": 1,
+      "name": "Flour",
+      "category": "Baking",
+      "unit": "Cups",
+      "quantity": 3
+    },
+    {
+      "ingredientId": 3,
+      "name": "Eggs",
+      "category": "Protiens",
+      "unit": "Large",
+      "quantity": 0.75
+    }
+  ]
+}

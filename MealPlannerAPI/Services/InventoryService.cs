@@ -1,7 +1,6 @@
 ﻿using MealPlannerAPI.Context;
 using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Response;
-using MealPlannerAPI.Models.Entities;
 using MealPlannerAPI.Models.Utility;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,12 +14,16 @@ namespace MealPlannerAPI.Services
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            var inventoryResponseDTO = await context.Inventory
+            var allInventoryItems = await context.Inventory
                 .Include(inv => inv.Ingredient)
-                .Select(inv => inv.ToResponseDTO(inv)).ToListAsync();
+                .ToListAsync();
+
+            var inventoryResponseDTO = allInventoryItems
+                .Select(inv => inv.ToResponseDTO(inv))
+                .ToList();
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             if (inventoryResponseDTO == null || inventoryResponseDTO.Count == 0)
@@ -45,7 +48,7 @@ namespace MealPlannerAPI.Services
                 .FirstOrDefaultAsync(inv => inv.Id == id);
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             if (inventory == null)
@@ -68,7 +71,7 @@ namespace MealPlannerAPI.Services
             context.Entry(createInventoryDTO.ToEntity(createInventoryDTO, id)).State = EntityState.Modified;
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             try
@@ -102,16 +105,16 @@ namespace MealPlannerAPI.Services
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            // TODO: Implement proper ingredient existence check using a unique identifier (GUID cache) or other criteria
+            // TODO: Implement proper inventory existence check using a unique identifier (GUID cache) or other criteria
             // Check HybridCache library
-            var ingredientExists = await context.Ingredients
-                .AnyAsync(i => string.Equals(i.Name, createInventoryDTO.Name));
+            var inventoryExists = await context.Inventory
+                .AnyAsync(i => string.Equals(i.Ingredient.Name, createInventoryDTO.Name));
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
-            if (ingredientExists)
+            if (inventoryExists)
             {
                 errors.Add(new Error($"Inventory.Name = {createInventoryDTO.Name}",
                     "Inventory item already exists.", ErrorType.Conflict));
@@ -142,7 +145,7 @@ namespace MealPlannerAPI.Services
                 .FirstOrDefaultAsync(i => i.Id == id);
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             if (inventory == null)

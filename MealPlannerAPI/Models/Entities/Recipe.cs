@@ -1,4 +1,5 @@
 ﻿using MealPlannerAPI.Models.DTOs.Response;
+using System.Text.Json.Serialization;
 
 namespace MealPlannerAPI.Models.Entities
 {
@@ -17,14 +18,16 @@ namespace MealPlannerAPI.Models.Entities
                 Id = recipe.Id,
                 Name = recipe.Name,
                 Instructions = recipe.Instructions,
-                Ingredients = [.. recipe.Ingredients.Select(i => new IngredientResponseDTO
-                {
-                    Id = i.Id,
-                    Name = i.Name,
-                    Category = i.Category,
-                    Unit = i.Unit,
-                    UsedInRecipes = [.. i.Recipes.Select(r => r.Id)]
-                })]
+                RecipeIngredients = [.. recipe.RecipeIngredients
+                .Select(ri => new RecipeIngredientResponseDTO
+                    {
+                        IngredientId = ri.IngredientId,
+                        Name = recipe.Ingredients.First(i => i.Id == ri.IngredientId).Name,
+                        Category = recipe.Ingredients.First(i => i.Id == ri.IngredientId).Category,
+                        Unit = recipe.Ingredients.First(i => i.Id == ri.IngredientId).Unit,
+                        Quantity = ri.Quantity
+                    }
+                )]
             };
         }
     }

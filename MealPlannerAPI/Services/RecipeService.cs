@@ -1,6 +1,7 @@
 ﻿using MealPlannerAPI.Context;
-using MealPlannerAPI.Models.DTOs.Create;
+using MealPlannerAPI.Models.DTOs.Request;
 using MealPlannerAPI.Models.DTOs.Response;
+using MealPlannerAPI.Models.Entities;
 using MealPlannerAPI.Models.Utility;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,10 +17,12 @@ namespace MealPlannerAPI.Services
 
             var recipeResponseDTO = await context.Recipes
                 .Include(r => r.Ingredients)
-                .Select(r => r.ToResponseDTO(r)).ToListAsync();
+                .Include(r => r.RecipeIngredients)
+                .Select(r => r.ToResponseDTO(r))
+                .ToListAsync();
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             if (recipeResponseDTO == null || recipeResponseDTO.Count == 0)
@@ -41,10 +44,11 @@ namespace MealPlannerAPI.Services
 
             var recipe = await context.Recipes
                 .Include(r => r.Ingredients)
+                .Include(r => r.RecipeIngredients)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             if (recipe == null)
@@ -60,15 +64,59 @@ namespace MealPlannerAPI.Services
             return Result<RecipeResponseDTO>.Success(recipe?.ToResponseDTO(recipe));
         }
 
-        public async Task<Result<RecipeResponseDTO>> PutRecipeAsync(CreateRecipeDTO createRecipeDTO, int? id)
+        public async Task<Result<RecipeResponseDTO>> UpdateRecipeAsync(RecipeRequestDTO recipeRequestDTO, int? id)
         {
+            if (id == null)
+            {
+                return Result<RecipeResponseDTO>.Failure([new("Recipe.Id", "ID mismatch.", ErrorType.BadRequest)]);
+            }
+
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            context.Entry(createRecipeDTO.ToEntity(createRecipeDTO, id)).State = EntityState.Modified;
-
-            // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
+
+            var existingRecipesEntity = await context.Recipes
+                .Include(r => r.Ingredients)
+                .Include(r => r.RecipeIngredients)
+                .FirstAsync(r => r.Id == id);
+
+            if (existingRecipesEntity == null)
+            {
+                return Result<RecipeResponseDTO>.Failure([new($"Recipe.{id}", "Recipe not found.", ErrorType.NotFound)]);
+            }
+
+            // Entity Framework doesn't like implicitly updating child collections
+            // when there is a payload (Quantity) in a many-to-many join table (RecipeIngredients),
+            // so we have to explicitly do so.
+            foreach (var updatedRecipeIngredient in recipeRequestDTO.RecipeIngredients)
+            {
+                var existingRecipeIngredient = existingRecipesEntity.RecipeIngredients
+                    .FirstOrDefault(ri => ri.IngredientId == updatedRecipeIngredient.IngredientId && ri.RecipeId == id);
+
+                if (existingRecipeIngredient != null)
+                {
+                    context.Entry(existingRecipeIngredient).CurrentValues.SetValues(updatedRecipeIngredient);
+                }
+                else
+                {
+                    existingRecipesEntity.RecipeIngredients.Add(new RecipeIngredients
+                    {
+                        IngredientId = updatedRecipeIngredient.IngredientId,
+                        Quantity = updatedRecipeIngredient.Quantity
+                    });
+                }
+            }
+
+            // Remove RecipeIngredients that are not in the recipeDTO
+            foreach (var existingRecipeIngredient in existingRecipesEntity.RecipeIngredients)
+            {
+                if (!recipeRequestDTO.RecipeIngredients.Any(ri => ri.IngredientId == existingRecipeIngredient.IngredientId))
+                {
+                    context.RecipeIngredients.Remove(existingRecipeIngredient);
+                }
+            }
+
+            context.Entry(existingRecipesEntity);
 
             try
             {
@@ -77,81 +125,105 @@ namespace MealPlannerAPI.Services
             }
             catch (DbUpdateConcurrencyException)
             {
-                // TODO: Implement proper recipe existence check using a unique identifier (GUID cache) or other criteria
-                // Check HybridCache library
-                if (!await context.Recipes.AnyAsync(r => r.Id == id))
-                {
-                    errors.Add(new Error($"Recipe.{id}", "Recipe not found.", ErrorType.NotFound));
-                }
-                else
-                {
-                    throw;
-                }
-
-                if (errors.Count != 0)
-                {
-                    return Result<RecipeResponseDTO>.Failure(errors);
-                }
+                throw;
             }
 
-            return Result<RecipeResponseDTO>.Success(new RecipeResponseDTO());
+            if (errors.Count != 0)
+            {
+                return Result<RecipeResponseDTO>.Failure(errors);
+            }
+
+            return Result<RecipeResponseDTO>.Success(existingRecipesEntity.ToResponseDTO(existingRecipesEntity));
         }
 
-        public async Task<Result<RecipeResponseDTO>> PostRecipeAsync(CreateRecipeDTO createRecipeDTO)
+        public async Task<Result<RecipeResponseDTO>> CreateRecipeAsync(RecipeRequestDTO recipeRequestDTO)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            // TODO: Implement proper ingredient existence check using a unique identifier (GUID cache) or other criteria
-            // Check HybridCache library
             var recipeExists = await context.Recipes
-                .AnyAsync(r => string.Equals(r.Name, createRecipeDTO.Name));
+                .AnyAsync(r => string.Equals(r.Name, recipeRequestDTO.Name));
 
-            // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
             var errors = new List<Error>();
 
+            // There could be different versions of basically the same recipe,
+            // so only really worried about the name being the same, not the other properties.
+            // If the name is the same, then it is considered a duplicate.
+            // I may revisit this later and add a more robust check for duplicates, but for now, this will do.
             if (recipeExists)
             {
-                errors.Add(new Error($"Recipe.Name = {createRecipeDTO.Name}",
+                errors.Add(new Error($"Recipe.Name = {recipeRequestDTO.Name}",
                     "Recipe already exists.", ErrorType.Conflict));
 
                 return Result<RecipeResponseDTO>.Failure(errors);
             }
 
-            var recipe = createRecipeDTO.ToEntity(createRecipeDTO, null);
+            var newRecipeEntity = new Recipe
+            {
+                Name = recipeRequestDTO.Name,
+                Instructions = recipeRequestDTO.Instructions
+            };
+
+            // Entity Framework doesn't like implicitly adding child collections
+            // when there is a payload (Quantity) in a many-to-many join table (RecipeIngredients),
+            // so we have to explicitly do so.
+            foreach (var updatedRecipeIngredient in recipeRequestDTO.RecipeIngredients)
+            {
+                var existingIngredient = context.Ingredients
+                    .FirstOrDefault(ri => ri.Id == updatedRecipeIngredient.IngredientId);
+                
+                if (existingIngredient != null)
+                {
+                    newRecipeEntity.RecipeIngredients.Add(new RecipeIngredients
+                    {
+                        IngredientId = updatedRecipeIngredient.IngredientId,
+                        Quantity = updatedRecipeIngredient.Quantity
+                    });
+                }
+                else
+                {
+                    errors.Add(new Error($"Ingredient.Id = {existingIngredient?.Id}",
+                        "Ingredient not found. Please add the ingredient before attempting to use it in a recipe.", ErrorType.NotFound ));
+
+                    return Result<RecipeResponseDTO>.Failure(errors);
+                }
+            }
+
+            context.Add(newRecipeEntity);
 
             // TODO: Add exception handling here
-            await context.Recipes.AddAsync(recipe);
             await context.SaveChangesAsync();
 
-            return Result<RecipeResponseDTO>.Success
-            (
-                recipe.ToResponseDTO(await context.Recipes
-                    .Include(i => i.Ingredients)
-                    .FirstAsync(i => i.Name == createRecipeDTO.Name))
-            );
+            if (errors.Count != 0)
+            {
+                return Result<RecipeResponseDTO>.Failure(errors);
+            }
+
+            return Result<RecipeResponseDTO>.Success(newRecipeEntity.ToResponseDTO(newRecipeEntity));
         }
 
         public async Task<Result<RecipeResponseDTO>> DeleteRecipeAsync(int? id)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            var recipe = await context.Recipes
-                .FirstOrDefaultAsync(r => r.Id == id);
+            var recipeExists = await context.Recipes
+                .AnyAsync(r => r.Id == id);
+
+            var recipe = new Recipe();
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
-            if (recipe == null)
+            if (!recipeExists)
             {
                 errors.Add(new Error("Recipe", "Recipe not found.", ErrorType.NotFound));
             }
             else
             {
+                recipe = await context.Recipes.FirstAsync(r => r.Id == id);
                 context.Recipes.Remove(recipe);
 
-                // TODO: Add exception handling here
+                // TODO: Add exception handling here;
                 await context.SaveChangesAsync();
             }
 
@@ -160,7 +232,7 @@ namespace MealPlannerAPI.Services
                 return Result<RecipeResponseDTO>.Failure(errors);
             }
 
-            return Result<RecipeResponseDTO>.Success(recipe?.ToResponseDTO(recipe));
+            return Result<RecipeResponseDTO>.Success(recipe.ToResponseDTO(recipe));
         }
     }
 }

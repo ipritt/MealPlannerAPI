@@ -8,11 +8,10 @@ namespace MealPlannerAPI.Models.DTOs.Create
         public string Category { get; set; } = string.Empty;
         public string Unit { get; set; } = string.Empty;
 
-        public Ingredient ToEntity(CreateIngredientDTO createIngredientDTO, int? id)
+        public Ingredient ToEntity(CreateIngredientDTO createIngredientDTO)
         {
             return new Ingredient
             {
-                Id = id ?? 0,
                 Name = createIngredientDTO.Name,
                 Category = createIngredientDTO.Category,
                 Unit = createIngredientDTO.Unit

@@ -1,7 +1,7 @@
 ﻿using MealPlannerAPI.Context;
 using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Response;
-using MealPlannerAPI.Models.Entities;
+using MealPlannerAPI.Models.DTOs.Update;
 using MealPlannerAPI.Models.Utility;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
@@ -16,12 +16,21 @@ namespace MealPlannerAPI.Services
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            var ingredientResponseDTO = await context.Ingredients
+            var allIngredients = await context.Ingredients
                 .Include(i => i.Recipes)
-                .Select(i => i.ToResponseDTO(i)).ToListAsync();
+                .ToListAsync();
+
+            var inStockAmount = await context.Inventory
+                .Include(inv => inv.Ingredient)
+                .Where(inv => inv.IngredientId == inv.Ingredient.Id)
+                .Select(inv => inv.InStockAmount)
+                .FirstOrDefaultAsync();
+
+            var ingredientResponseDTO = allIngredients
+                .Select(i => i.ToResponseDTO(i, inStockAmount)).ToList();
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             if (ingredientResponseDTO == null || ingredientResponseDTO.Count == 0)
@@ -45,8 +54,14 @@ namespace MealPlannerAPI.Services
                 .Include(i => i.Recipes)
                 .FirstOrDefaultAsync(i => i.Id == id);
 
+            var inStockAmount = await context.Inventory
+                .Include(i => i.Ingredient)
+                .Where(inv => inv.IngredientId == id)
+                .Select(inv => inv.InStockAmount)
+                .FirstOrDefaultAsync();
+
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             if (ingredient == null)
@@ -59,17 +74,22 @@ namespace MealPlannerAPI.Services
                 return Result<IngredientResponseDTO>.Failure(errors);
             }
 
-            return Result<IngredientResponseDTO>.Success(ingredient?.ToResponseDTO(ingredient));
+            return Result<IngredientResponseDTO>.Success(ingredient?.ToResponseDTO(ingredient, inStockAmount));
         }
 
-        public async Task<Result<IngredientResponseDTO>> PutIngredientAsync(CreateIngredientDTO createIngredientDTO, int? id)
+        public async Task<Result<IngredientResponseDTO>> UpdateIngredientAsync(UpdateIngredientDTO updateIngredientDTO, int? id)
         {
+            if (id == null || id != updateIngredientDTO.Id)
+            {
+                return Result<IngredientResponseDTO>.Failure([new("Ingredient.Id", "ID mismatch.", ErrorType.BadRequest)]);
+            }
+
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            context.Entry(createIngredientDTO.ToEntity(createIngredientDTO, id)).State = EntityState.Modified;
+            context.Entry(updateIngredientDTO.ToEntity(updateIngredientDTO, (int)id)).State = EntityState.Modified;
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             try
@@ -99,7 +119,7 @@ namespace MealPlannerAPI.Services
             return Result<IngredientResponseDTO>.Success(new IngredientResponseDTO());
         }
 
-        public async Task<Result<IngredientResponseDTO>> PostIngredientAsync(CreateIngredientDTO createIngredientDTO)
+        public async Task<Result<IngredientResponseDTO>> CreateIngredientAsync(CreateIngredientDTO createIngredientDTO)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -109,7 +129,7 @@ namespace MealPlannerAPI.Services
                 .AnyAsync(i => string.Equals(i.Name, createIngredientDTO.Name));
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             if (ingredientExists)
@@ -120,7 +140,7 @@ namespace MealPlannerAPI.Services
                 return Result<IngredientResponseDTO>.Failure(errors);
             }
 
-            var ingredient = createIngredientDTO.ToEntity(createIngredientDTO, null);
+            var ingredient = createIngredientDTO.ToEntity(createIngredientDTO);
 
             // TODO: Add exception handling here
             await context.Ingredients.AddAsync(ingredient);
@@ -130,7 +150,8 @@ namespace MealPlannerAPI.Services
             (
                 ingredient.ToResponseDTO(await context.Ingredients
                     .Include(i => i.Recipes)
-                    .FirstAsync(i => i.Name == createIngredientDTO.Name))
+                    .FirstAsync(i => i.Name == createIngredientDTO.Name)
+                    , null)
             );
         }
 
@@ -142,7 +163,7 @@ namespace MealPlannerAPI.Services
                 .Include(i => i.Recipes).FirstOrDefaultAsync(i => i.Id == id);
 
             // TODO: handle validations in separate validation layer or service,
-            // and return a list of errors instead of throwing exceptions
+            // and return a list of errors
             var errors = new List<Error>();
 
             if (ingredient == null)
@@ -166,7 +187,7 @@ namespace MealPlannerAPI.Services
                 return Result<IngredientResponseDTO>.Failure(errors);
             }
 
-            return Result<IngredientResponseDTO>.Success(ingredient?.ToResponseDTO(ingredient));
+            return Result<IngredientResponseDTO>.Success(ingredient?.ToResponseDTO(ingredient, null));
         }
     }
 }

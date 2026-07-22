@@ -1,5 +1,6 @@
 using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Response;
+using MealPlannerAPI.Models.DTOs.Update;
 using MealPlannerAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,12 +33,12 @@ namespace MealPlannerAPI.Controllers
         // PUT: api/Ingredient/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id:int}")]
-        public async Task<ActionResult<IngredientResponseDTO>> PutIngredient(
-            [FromBody] CreateIngredientDTO createIngredientDTO, [FromRoute] int? id)
+        public async Task<ActionResult<IngredientResponseDTO>> UpdateIngredient(
+            [FromBody] UpdateIngredientDTO updateIngredientDTO, [FromRoute] int? id)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var result = await _ingredientService.PutIngredientAsync(createIngredientDTO, id);
+            var result = await _ingredientService.UpdateIngredientAsync(updateIngredientDTO, id);
 
             return HandleResult(result, true);
         }
@@ -45,12 +46,12 @@ namespace MealPlannerAPI.Controllers
         // POST: api/Ingredient
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<IngredientResponseDTO>> PostIngredient(
+        public async Task<ActionResult<IngredientResponseDTO>> CreateIngredient(
             [FromBody] CreateIngredientDTO createIngredientDTO)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var result = await _ingredientService.PostIngredientAsync(createIngredientDTO);
+            var result = await _ingredientService.CreateIngredientAsync(createIngredientDTO);
 
             return HandleResult(result, false);
         }
