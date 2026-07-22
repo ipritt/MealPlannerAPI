@@ -1,5 +1,11 @@
 MealPlanner Notes
 
+-----Current state - Recipe and Ingredient CRUD operations are working. Still needs validations, error handling and unit tests. But, with those working, for now, 
+I'm going to hop over to creating an Angular UI that can exercise these endpoints.-----
+
+-----Future - Will be adding lookup tables for Units and possibly Category. Although, I am reconsidering even having Category and leaning toward a Tag system.
+	Will also be adding a Users table so I can start setting up authentication and "Inventory" functionality.
+
 PUT returns 204 NoContent
 POST returns 201 and inserted model
 DELETE returns 
@@ -21,9 +27,6 @@ ToDos
 
 
 Current issues
--When adding a new ingredient, should require an amount for InstockAmount 
-	(could be zero, but if going to be used in a recipe, needs to have at least as much as the recipe requires, but that's a recipe rule, not an ingredient rule)
--Recipe Add is adding ingredients even if they already exist - Hiding or removing Ingredients from RecipeDTO and only having IngredientId forgien key.
 
 
 DONE --GetAllInventory isn't returning values for Name or Unit - Needed to return inventory.Ingredient.Name and inventory.Ingredient.Unit instead of inventory.Name and inventory.Unit in MapResponseFromEntity
@@ -37,3 +40,7 @@ DONE --Recipe ingredient quantity not working - Created seperate RecipeIngredien
 DONE --Ingredient InStockAmount not working - Created seperate RecipeIngredientResponseDTO to return Quantity for recipe ingredients and InstockAmount for Ingredient
 DONE --Recipe ingredients UsedByRecipes is borked - the first recipe is only seeing itself, so all ingredients are only used in the one recipe, second recipe is correct
 		- Needed to get all recipes then pass into Mapping function because it only had the recipes for each iteration
+DONE --When adding a new ingredient, should require an amount for InstockAmount 
+	(could be zero, but if going to be used in a recipe, needs to have at least as much as the recipe requires, but that's a recipe rule, not an ingredient rule) 
+	----This is not true. In the near future, InStockAmount is going to live on what is now the Inventory table, which will end up being a join table bewtween Users(doesn't exist yet) and Ingredients.
+DONE --Recipe Add is adding ingredients even if they already exist - Hiding or removing Ingredients from RecipeDTO and only having IngredientId forgien key.
