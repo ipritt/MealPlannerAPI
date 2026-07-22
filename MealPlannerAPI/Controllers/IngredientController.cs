@@ -1,6 +1,5 @@
-using MealPlannerAPI.Models.DTOs.Create;
+using MealPlannerAPI.Models.DTOs.Request;
 using MealPlannerAPI.Models.DTOs.Response;
-using MealPlannerAPI.Models.DTOs.Update;
 using MealPlannerAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,11 +33,11 @@ namespace MealPlannerAPI.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id:int}")]
         public async Task<ActionResult<IngredientResponseDTO>> UpdateIngredient(
-            [FromBody] UpdateIngredientDTO updateIngredientDTO, [FromRoute] int? id)
+            [FromBody] IngredientRequestDTO ingredientRequestDTO, [FromRoute] int? id)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var result = await _ingredientService.UpdateIngredientAsync(updateIngredientDTO, id);
+            var result = await _ingredientService.UpdateIngredientAsync(ingredientRequestDTO, id);
 
             return HandleResult(result, true);
         }
@@ -47,11 +46,11 @@ namespace MealPlannerAPI.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<IngredientResponseDTO>> CreateIngredient(
-            [FromBody] CreateIngredientDTO createIngredientDTO)
+            [FromBody] IngredientRequestDTO ingredientRequestDTO)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var result = await _ingredientService.CreateIngredientAsync(createIngredientDTO);
+            var result = await _ingredientService.CreateIngredientAsync(ingredientRequestDTO);
 
             return HandleResult(result, false);
         }

@@ -1,9 +1,9 @@
 ﻿using FluentValidation;
-using MealPlannerAPI.Models.DTOs.Create;
+using MealPlannerAPI.Models.DTOs.Request;
 
 namespace MealPlannerAPI.Validations
 {
-    public class CreateIngredientDTOValidator : AbstractValidator<CreateIngredientDTO>
+    public class CreateIngredientDTOValidator : AbstractValidator<IngredientRequestDTO>
     {
         public CreateIngredientDTOValidator() 
         {

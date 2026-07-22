@@ -1,10 +1,11 @@
 ﻿using MealPlannerAPI.Context;
 using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Response;
-using MealPlannerAPI.Models.DTOs.Update;
+using MealPlannerAPI.Models.DTOs.Request;
 using MealPlannerAPI.Models.Utility;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using MealPlannerAPI.Models.Entities;
 
 namespace MealPlannerAPI.Services
 {
@@ -77,16 +78,22 @@ namespace MealPlannerAPI.Services
             return Result<IngredientResponseDTO>.Success(ingredient?.ToResponseDTO(ingredient, inStockAmount));
         }
 
-        public async Task<Result<IngredientResponseDTO>> UpdateIngredientAsync(UpdateIngredientDTO updateIngredientDTO, int? id)
+        public async Task<Result<IngredientResponseDTO>> UpdateIngredientAsync(IngredientRequestDTO ingredientRequestDTO, int? id)
         {
-            if (id == null || id != updateIngredientDTO.Id)
+            if (id == null)
             {
                 return Result<IngredientResponseDTO>.Failure([new("Ingredient.Id", "ID mismatch.", ErrorType.BadRequest)]);
             }
 
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            context.Entry(updateIngredientDTO.ToEntity(updateIngredientDTO, (int)id)).State = EntityState.Modified;
+            context.Entry(new Ingredient
+            {
+                Id = (int)id,
+                Name = ingredientRequestDTO.Name,
+                Category = ingredientRequestDTO.Category,
+                Unit = ingredientRequestDTO.Unit
+            }).State = EntityState.Modified;
 
             // TODO: handle validations in separate validation layer or service,
             // and return a list of errors
@@ -119,14 +126,14 @@ namespace MealPlannerAPI.Services
             return Result<IngredientResponseDTO>.Success(new IngredientResponseDTO());
         }
 
-        public async Task<Result<IngredientResponseDTO>> CreateIngredientAsync(CreateIngredientDTO createIngredientDTO)
+        public async Task<Result<IngredientResponseDTO>> CreateIngredientAsync(IngredientRequestDTO ingredientRequestDTO)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
             // TODO: Implement proper ingredient existence check using a unique identifier (GUID cache) or other criteria
             // Check HybridCache library
             var ingredientExists = await context.Ingredients
-                .AnyAsync(i => string.Equals(i.Name, createIngredientDTO.Name));
+                .AnyAsync(i => string.Equals(i.Name, ingredientRequestDTO.Name));
 
             // TODO: handle validations in separate validation layer or service,
             // and return a list of errors
@@ -134,13 +141,18 @@ namespace MealPlannerAPI.Services
 
             if (ingredientExists)
             {
-                errors.Add(new Error($"Ingredient.Name = {createIngredientDTO.Name}", 
+                errors.Add(new Error($"Ingredient.Name = {ingredientRequestDTO.Name}", 
                     "Ingredient already exists.", ErrorType.Conflict));
 
                 return Result<IngredientResponseDTO>.Failure(errors);
             }
 
-            var ingredient = createIngredientDTO.ToEntity(createIngredientDTO);
+            var ingredient = new Ingredient
+            {
+                Name = ingredientRequestDTO.Name,
+                Category = ingredientRequestDTO.Category,
+                Unit = ingredientRequestDTO.Unit
+            };
 
             // TODO: Add exception handling here
             await context.Ingredients.AddAsync(ingredient);
@@ -150,7 +162,7 @@ namespace MealPlannerAPI.Services
             (
                 ingredient.ToResponseDTO(await context.Ingredients
                     .Include(i => i.Recipes)
-                    .FirstAsync(i => i.Name == createIngredientDTO.Name)
+                    .FirstAsync(i => i.Name == ingredientRequestDTO.Name)
                     , null)
             );
         }

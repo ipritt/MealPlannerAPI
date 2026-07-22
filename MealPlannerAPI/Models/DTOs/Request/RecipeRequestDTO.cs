@@ -1,4 +1,4 @@
-﻿using MealPlannerAPI.Models.DTOs.Update;
+﻿using MealPlannerAPI.Models.DTOs.Request;
 
 namespace MealPlannerAPI.Models.DTOs.Request
 {
@@ -6,6 +6,6 @@ namespace MealPlannerAPI.Models.DTOs.Request
     {
         public string Name { get; set; } = string.Empty;
         public string Instructions { get; set; } = string.Empty;
-        public ICollection<UpdateRecipeIngredientDTO> RecipeIngredients { get; set; } = [];
+        public ICollection<RecipeIngredientRequestDTO> RecipeIngredients { get; set; } = [];
     }
 }

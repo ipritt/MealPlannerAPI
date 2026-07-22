@@ -2,7 +2,6 @@ using FluentValidation;
 using MealPlannerAPI.Context;
 using MealPlannerAPI.Models.DTOs.Create;
 using MealPlannerAPI.Models.DTOs.Request;
-using MealPlannerAPI.Models.DTOs.Update;
 using MealPlannerAPI.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,7 +35,7 @@ builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 
 // Automatically scans and registers all validators from the assembly
-builder.Services.AddValidatorsFromAssemblyContaining<UpdateIngredientDTO>();
+builder.Services.AddValidatorsFromAssemblyContaining<IngredientRequestDTO>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateInventoryDTO>();
 builder.Services.AddValidatorsFromAssemblyContaining<RecipeRequestDTO>();
 //builder.Services.AddValidatorsFromAssemblyContaining<UpdateIngredientDTO>();
