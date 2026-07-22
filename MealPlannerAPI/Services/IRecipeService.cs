@@ -1,5 +1,4 @@
-﻿using MealPlannerAPI.Models.DTOs.Create;
-using MealPlannerAPI.Models.DTOs.Request;
+﻿using MealPlannerAPI.Models.DTOs.Request;
 using MealPlannerAPI.Models.DTOs.Response;
 using MealPlannerAPI.Models.Utility;
 

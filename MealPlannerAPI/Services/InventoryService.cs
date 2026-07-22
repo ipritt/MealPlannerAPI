@@ -1,6 +1,7 @@
 ﻿using MealPlannerAPI.Context;
-using MealPlannerAPI.Models.DTOs.Create;
+using MealPlannerAPI.Models.DTOs.Request;
 using MealPlannerAPI.Models.DTOs.Response;
+using MealPlannerAPI.Models.Entities;
 using MealPlannerAPI.Models.Utility;
 using Microsoft.EntityFrameworkCore;
 
@@ -64,11 +65,18 @@ namespace MealPlannerAPI.Services
             return Result<InventoryResponseDTO>.Success(inventory?.ToResponseDTO(inventory));
         }
 
-        public async Task<Result<InventoryResponseDTO>> PutInventoryAsync(CreateInventoryDTO createInventoryDTO, int? id)
+        public async Task<Result<InventoryResponseDTO>> PutInventoryAsync(InventoryRequestDTO inventoryRequestDTO, int? id)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
-            context.Entry(createInventoryDTO.ToEntity(createInventoryDTO, id)).State = EntityState.Modified;
+            context.Entry(new Inventory
+            {
+                Id = id ?? 0,
+                IngredientId = inventoryRequestDTO.IngredientId,
+                Name = inventoryRequestDTO.Name,
+                InStockAmount = inventoryRequestDTO.InStockAmount,
+                Unit = inventoryRequestDTO.Unit
+            }).State = EntityState.Modified;
 
             // TODO: handle validations in separate validation layer or service,
             // and return a list of errors
@@ -101,14 +109,14 @@ namespace MealPlannerAPI.Services
             return Result<InventoryResponseDTO>.Success(new InventoryResponseDTO());
         }
 
-        public async Task<Result<InventoryResponseDTO>> PostInventoryAsync(CreateInventoryDTO createInventoryDTO)
+        public async Task<Result<InventoryResponseDTO>> PostInventoryAsync(InventoryRequestDTO inventoryRequestDTO)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
             // TODO: Implement proper inventory existence check using a unique identifier (GUID cache) or other criteria
             // Check HybridCache library
             var inventoryExists = await context.Inventory
-                .AnyAsync(i => string.Equals(i.Ingredient.Name, createInventoryDTO.Name));
+                .AnyAsync(i => string.Equals(i.Ingredient.Name, inventoryRequestDTO.Name));
 
             // TODO: handle validations in separate validation layer or service,
             // and return a list of errors
@@ -116,13 +124,19 @@ namespace MealPlannerAPI.Services
 
             if (inventoryExists)
             {
-                errors.Add(new Error($"Inventory.Name = {createInventoryDTO.Name}",
+                errors.Add(new Error($"Inventory.Name = {inventoryRequestDTO.Name}",
                     "Inventory item already exists.", ErrorType.Conflict));
 
                 return Result<InventoryResponseDTO>.Failure(errors);
             }
 
-            var inventory = createInventoryDTO.ToEntity(createInventoryDTO, null);
+            var inventory = new Inventory
+            {
+                IngredientId = inventoryRequestDTO.IngredientId,
+                Name = inventoryRequestDTO.Name,
+                InStockAmount = inventoryRequestDTO.InStockAmount,
+                Unit = inventoryRequestDTO.Unit
+            };
 
             // TODO: Add exception handling here
             await context.Inventory.AddAsync(inventory);
@@ -132,7 +146,7 @@ namespace MealPlannerAPI.Services
             (
                 inventory.ToResponseDTO(await context.Inventory
                     .Include(i => i.Ingredient)
-                    .FirstAsync(i => i.Name == createInventoryDTO.Name))
+                    .FirstAsync(i => i.Name == inventoryRequestDTO.Name))
             );
         }
 

@@ -1,4 +1,4 @@
-using MealPlannerAPI.Models.DTOs.Create;
+using MealPlannerAPI.Models.DTOs.Request;
 using MealPlannerAPI.Models.DTOs.Response;
 using MealPlannerAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -33,11 +33,11 @@ namespace MealPlannerAPI.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<ActionResult<InventoryResponseDTO>> PutInventory(
-            [FromBody] CreateInventoryDTO createInventoryDTO, [FromRoute] int? id)
+            [FromBody] InventoryRequestDTO inventoryRequestDTO, [FromRoute] int? id)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var result = await _inventoryService.PutInventoryAsync(createInventoryDTO, id);
+            var result = await _inventoryService.PutInventoryAsync(inventoryRequestDTO, id);
 
             return HandleResult(result, true);
         }
@@ -46,11 +46,11 @@ namespace MealPlannerAPI.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<InventoryResponseDTO>> PostInventory(
-            [FromBody] CreateInventoryDTO createInventoryDTO)
+            [FromBody] InventoryRequestDTO inventoryRequestDTO)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var result = await _inventoryService.PostInventoryAsync(createInventoryDTO);
+            var result = await _inventoryService.PostInventoryAsync(inventoryRequestDTO);
 
             return HandleResult(result, false);
         }

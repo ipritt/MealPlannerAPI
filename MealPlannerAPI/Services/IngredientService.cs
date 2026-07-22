@@ -1,11 +1,10 @@
 ﻿using MealPlannerAPI.Context;
-using MealPlannerAPI.Models.DTOs.Create;
-using MealPlannerAPI.Models.DTOs.Response;
 using MealPlannerAPI.Models.DTOs.Request;
+using MealPlannerAPI.Models.DTOs.Response;
+using MealPlannerAPI.Models.Entities;
 using MealPlannerAPI.Models.Utility;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
-using MealPlannerAPI.Models.Entities;
 
 namespace MealPlannerAPI.Services
 {
